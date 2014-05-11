@@ -23,12 +23,28 @@ public:
 	std::string get_output_filename(void) const;
 	// Get the number of threads
 	int get_number_threads(void);
+	// Get the vignere key
+	std::string get_vignere_key(void) const;
+	// Get the xor encrypt key
+	int get_xor_key(void) const;
+	// Get the xor encrypt Initialization key for CBC mode
+	int get_IV(void) const;
+	// Get the xor encrypt mode
+	std::string get_mode(void) const;
 
 	void print_errors(std::ostream & out) const;
 
 	bool should_print_help(void) const;
 	// Output help to the specified output stream
 	void print_help(std::ostream & out) const;
+	// Various boolean options that could be chosen
+	bool should_group(void) const;
+	bool should_pack(void) const;
+	bool should_encode(void) const;
+	bool should_decode(void) const;
+	// Returns 'true' for vignere and 'false' for xor
+	bool vignere_or_xor(void) const;
+
 
 private:
     //-----------------------------------------------------------------------//

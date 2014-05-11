@@ -22,12 +22,10 @@ class pack{};
 - vignere, ecb, group, pack x
 - xor, ecb x 
 - xor, ecb, group x 
-- xor ecb, pack
-- xor, ecb, group, pack
-- xor, cbc -- use IV = all 1s for ECB. Thus saving time
-- xor, cbc, pack 
-- xor, cbc, group
-- xor, cbc, group, pack
-- xor, cbc, pack
-- xoe, e
+- xor ecb, pack x
+- xor, ecb, group, pack 
+- xor, cbc x -- use IV = all 1s for ECB. Thus saving time
+- xor, cbc, pack x
+- xor, cbc, group x
+- xor, cbc, group, pack x
 */

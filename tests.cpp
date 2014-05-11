@@ -33,10 +33,12 @@ TEST_CASE("Vignere")
     std::default_random_engine e(seed);
    	std::uniform_int_distribution<int> rangeA(65, 90); //random letters
    	std::uniform_int_distribution<int> rangeL(1, 15); //random word lengths
+   	std::uniform_int_distribution<int> rangeK(0, 1000000000); //random xor key lengths
 
 
    	//Random key
 	string key = "";
+	int key2 = rangeK(e);
 
 	int length = rangeL(e);
 	for(int x = 0;x<length;x++)
@@ -48,17 +50,24 @@ TEST_CASE("Vignere")
 	CryptoMachine<vignere,ecb, other, pack> thingy2(key);
 	CryptoMachine<vignere,ecb,group,other>thingy3(key);
 	CryptoMachine<vignere,ecb,other,pack>thingy6(key);
-	CryptoMachine<xorencrypt,ecb,other,other>thingy4(2000);
-	CryptoMachine<xorencrypt,ecb,group,other>thingy5(462933);
+	CryptoMachine<xorencrypt,ecb,other,other>thingy4(key2);
+	CryptoMachine<xorencrypt,ecb,group,other>thingy5(key2);
+	CryptoMachine<xorencrypt,ecb,other,pack>thingyC(key2);
+	CryptoMachine<xorencrypt,ecb,group,pack>thingyD(key2);
+
+	CryptoMachine<xorencrypt,cbc,other,other>thingy8(key2, 10000);
+	CryptoMachine<xorencrypt,cbc,group,other>thingy9(key2, 10000);
+	CryptoMachine<xorencrypt,cbc,other,pack>thingyA(key2, 10000);
+	CryptoMachine<xorencrypt,cbc,group,pack>thingyB(key2, 10000);
 	CryptoMachine<vignere,ecb,group,pack>thingy7(key);
 
 	ifstream fin("input.txt");
 	ofstream fout("output.txt");
 	ifstream fin2("output.txt");
-	thingy7.encode(fin, fout);
+	thingyD.encode(fin, fout);
 	fout.close();
 	fin.close();
-	thingy7.decode(fin2, std::cout);
+	thingyD.decode(fin2, std::cout);
 	fin2.close();
 }
 
