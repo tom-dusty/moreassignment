@@ -129,7 +129,7 @@ public:
 // Templated with four types that modify functionality
 
 template <typename Cipher, typename Mode, typename Group, typename Pack>
-class CryptoMachine
+class CryptoMachine 
 {
 public:
 	std::vector<char> key;

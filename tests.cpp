@@ -26,7 +26,7 @@ The tests are divided into five Test cases:
 
 using namespace std;       
 
-TEST_CASE("Vignere")
+TEST_CASE("Vignere encoding and decoding")
 {
 	//Generates random letters between A and Z
 	std::size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -44,6 +44,22 @@ TEST_CASE("Vignere")
 	for(int x = 0;x<length;x++)
 	{
 		key+=rangeA(e);
+	}
+
+	int length = rangeL(e);
+	int length2 = rangeL(e);
+	for(int y = 0;x<length2;y++)
+	{
+		for(int x = 0;x<length;x++)
+		{
+			key+=rangeA(e);
+		}
+	}
+
+
+	SECTION("Encryption/decryption")
+	{
+		CryptoMachine<vignere,other, other, pack> thingy(key);	
 	}
 
 	CryptoMachine<vignere,other, other, pack> thingy(key);
@@ -71,5 +87,26 @@ TEST_CASE("Vignere")
 	fin2.close();
 }
 
+TEST_CASE("Vignere packing and unpacking")
+{
+
+}
+
+TEST_CASE("Vignere grouping")
+{
+
+}
+
+TEST_CASE("Xor encoding and decoding")
+{
+
+}
+
+TEST_CASE("Xor packing and unpacking")
+{
+
+}
+
+TEST_CASE("Xor grouping")
 
 

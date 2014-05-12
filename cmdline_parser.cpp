@@ -23,18 +23,18 @@ cmdline_parser::cmdline_parser(void) : vm(), od("Options")
 		((OUTPUTFILE+",o").c_str(), po::value<std::string>()->default_value("primes.lst"),
 			"output file name")
 		((NUMBERTHREADS+",t").c_str(), po::value<int>()->default_value(4),
-			"number of threads"); 
-		("encode,e","Encode the input"); 
-		("decode,d","Decode the input");
-		(("xor,x").c_str(), po::value<int>()->default_value(12345678),
-			"Encode/decode using xor xipher and specified key"); 
-		(("vignere,v").c_str(), po::value<std::string>()->default_value("abcdefgh"),
-			"Encode/decode using vignere xipher and specified key"); 
-		(("init,I").c_str(), po::value<int>()->default_value(12345678),
-			"Initialization vector to be used in CBC mode"); 
-		(("mode,m").c_str(), po::value<std::string>()->default_value("ECB"),
-			"Mode of xor cipher (EBC or CBC)"); 
-		("group,g","Support grouping");
+			"number of threads")
+		("encode,e","Encode the input")
+		("decode,d","Decode the input")
+		(("xor,x"), po::value<int>()->default_value(12345678),
+			"Encode/decode using xor xipher and specified key")
+		(("vignere,v"), po::value<std::string>()->default_value("abcdefgh"),
+			"Encode/decode using vignere xipher and specified key")
+		(("init,I"), po::value<int>()->default_value(12345678),
+			"Initialization vector to be used in CBC mode")
+		(("mode,m"), po::value<std::string>()->default_value("ECB"),
+			"Mode of xor cipher (EBC or CBC)")
+		("group,g","Support grouping")
 		("pack,p","Support packing"); 
 };
 
@@ -86,7 +86,7 @@ int cmdline_parser::get_number_threads(void)
 //-------------------------------------------------------------------------//
 // Get the vignere key
 //-------------------------------------------------------------------------//
-std::string get_vignere_key(void) const
+std::string cmdline_parser::get_vignere_key(void) const
 {
 	return vm["vignere"].as<std::string>();
 }
@@ -94,7 +94,7 @@ std::string get_vignere_key(void) const
 //-------------------------------------------------------------------------//
 // Get xor key
 //-------------------------------------------------------------------------//
-int get_xor_key(void) const
+int cmdline_parser::get_xor_key(void) const
 {
 	return vm["xor"].as<int>();
 }
@@ -102,7 +102,7 @@ int get_xor_key(void) const
 //-------------------------------------------------------------------------//
 // Get Initialization vector
 //-------------------------------------------------------------------------//
-int get_IV(void) const
+int cmdline_parser::get_IV(void) const
 {
 	return vm["init"].as<int>();
 }
@@ -110,7 +110,7 @@ int get_IV(void) const
 //-------------------------------------------------------------------------//
 // Get mode of xor encrypter
 //-------------------------------------------------------------------------//
-std::string get_mode(void) const
+std::string cmdline_parser::get_mode(void) const
 {
 	std::string temp = vm["mode"].as<std::string>();
 	if(temp == "EBC")
@@ -150,7 +150,7 @@ bool cmdline_parser::should_pack(void) const
 //-----------------------------------------------------------------------//
 // Should we encode or decode?
 //-------------------------------------------------------------------------//
-bool cmdline_parser::should_encode_or_decode(void) const
+bool cmdline_parser::should_encode(void) const
 {
 	// Are there instances of the group option stored in the variable map
 	return vm.count("encode") > 0;
@@ -167,7 +167,7 @@ bool cmdline_parser::should_decode(void) const
 //-----------------------------------------------------------------------//
 // Vignere or xor? true = vignere. false = xor
 //-------------------------------------------------------------------------//
-bool vignere_or_xor(void) const
+bool cmdline_parser::vignere_or_xor(void) const
 {
 	return !(vm.count("xor")>0);
 }

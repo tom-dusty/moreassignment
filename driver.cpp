@@ -1,7 +1,8 @@
 //Driver 
 //Thomas Dusterwald
 //11 May 2014
-#include <iostream>		
+#include <iostream>	
+#include <fstream>	
 #include <string>
 #include "cmdline_parser.h"
 #include "CryptoMachine.h"
@@ -15,6 +16,8 @@ int main(int argc, char* argv[])
 	int keyxor;
 	int IV;
 	
+		if(parser.should_print_help())
+		{ parser.print_help(std::cout);	}
 	if(!parser.process_cmdline(argc, argv))
 	{
 		std::cerr << "Couldn't process command line arguments" << std::endl;
@@ -36,7 +39,7 @@ int main(int argc, char* argv[])
 	}
 
 	if(parser.should_print_help())
-		{ parser.print_help(cout);	}
+		{ parser.print_help(std::cout);	}
 
 	if(parser.should_encode())
 		switchsum+=4;
@@ -154,44 +157,63 @@ int main(int argc, char* argv[])
 			break;
 
 		case 8: //decode with vignere -- no packing or grouping
-				CryptoMachine<vignere,ecb, other, other> encrypter(keyvig);
-				encrypter.decode(fin, fout);
-				break;
+				{
+					CryptoMachine<vignere,ecb, other, other> encrypter(keyvig);
+					encrypter.decode(fin, fout);
+					break;
+				}
+
 
 		case 9: //decode with vignere -- packing, no grouping
+			{
 				CryptoMachine<vignere,ecb, other, pack> encrypter(keyvig);
 				encrypter.decode(fin, fout);
 				break;
+			}
+
 
 		case 10: //decode with vignere -- grouping, no packing
+			{
 				CryptoMachine<vignere,ecb, group, other> encrypter(keyvig);
 				encrypter.decode(fin, fout);
 				break;
+			}
 
 		case 11: //decode with vignere -- grouping and packing
+			{
 				CryptoMachine<vignere,ecb, group, pack> encrypter(keyvig);
 				encrypter.decode(fin, fout);
 				break;
+			}
 
 		case 12: //encode with vignere -- no packing or grouping
+			{
 				CryptoMachine<vignere,ecb, other, other> encrypter(keyvig);
 				encrypter.encode(fin, fout);
 				break;
+			}
+
 
 		case 13: //encode with vignere -- packing, no grouping
+			{
 				CryptoMachine<vignere,ecb, other, pack> encrypter(keyvig);
 				encrypter.encode(fin, fout);
 				break;
+			}
 
 		case 14: //encode with vignere -- grouping, no packing
+			{
 				CryptoMachine<vignere,ecb, group, other> encrypter(keyvig);
 				encrypter.encode(fin, fout);
 				break;
+			}
 
 		case 15: //encode with vignere -- grouping and packing
+			{
 				CryptoMachine<vignere,ecb, group, pack> encrypter(keyvig);
 				encrypter.encode(fin, fout);
 				break;
+			}
 	}
 
 	return 0;

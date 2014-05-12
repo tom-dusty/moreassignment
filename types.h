@@ -24,7 +24,7 @@ class pack{};
 - xor, ecb, group x 
 - xor ecb, pack x
 - xor, ecb, group, pack 
-- xor, cbc x -- use IV = all 1s for ECB. Thus saving time
+- xor, cbc x -- use IV = all 0s for ECB. Thus saving time
 - xor, cbc, pack x
 - xor, cbc, group x
 - xor, cbc, group, pack x
