@@ -169,7 +169,7 @@ bool cmdline_parser::should_decode(void) const
 //-------------------------------------------------------------------------//
 bool cmdline_parser::vignere_or_xor(void) const
 {
-	return !(vm.count("xor")>0);
+	return vm.count("vignere")>0;
 }
 
 

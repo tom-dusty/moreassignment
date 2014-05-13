@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		switchsum+=1;
 	if(parser.vignere_or_xor())
 		switchsum += 8;
-
+std::cout << switchsum <<std::endl;
 	switch(switchsum)
 	{
 		case 0: // decode with xor -- no packing or grouping

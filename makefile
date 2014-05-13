@@ -8,17 +8,15 @@ CPPFLAGS = $(INCLUDE_DIRS) -std=c++0x
 LIBS = -lboost_program_options
 LDFLAGS = $(LIBS) $(LIB_DIRS) -fPIC
 OBJECTS = cmdline_parser.o driver.o
-SOURCES = *.cpp *.h
+SOURCES = *.cpp tests.cpp *.h
 PROGRAM = crypto
 
-tests : $(OBJECTS) $(SOURCES)
-	g++  tests.cpp -o $(PROGRAM) $(CPPFLAGS) $(LDFLAGS)
+tests : $(OBJECTS) $(SOURCES) tests.cpp
+	g++  tests.cpp -o tests $(CPPFLAGS) $(LDFLAGS)
 
-$(PROGRAM) : $(SOURCES) cmdline_parser.cpp
+
+$(PROGRAM) : $(SOURCES) cmdline_parser.cpp $(OBJECTS)
 	g++  driver.cpp cmdline_parser.o -o $(PROGRAM) $(CPPFLAGS) $(LDFLAGS)
-
-tests.o : $(SOURCES)
-	g++ -c tests.cpp $(CPPFLAGS)
 
 cmdline_parser.o : cmdline_parser.cpp
 	g++ -std=c++0x cmdline_parser.cpp -c $(CPPFLAGS) $(LDFLAGS)

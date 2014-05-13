@@ -89,6 +89,8 @@ public:
 	char operator()(char in)
 	{
 		char tbr = in xor key[count];
+		if(tbr == EOF)
+			tbr = in;
 		count = (count+1)%4;
 		return tbr;
 	}
@@ -104,6 +106,8 @@ public:
 	char operator()(char in)
 	{
 		char tbr = (in xor IV[count]) xor key[count];
+		if(tbr == EOF)
+			tbr = in;
 		IV[count] = tbr;
 		count = (count+1)%4;
 		return tbr;
@@ -120,6 +124,8 @@ public:
 	char operator()(char in)
 	{
 		char tbr = (in xor IV[count]) xor key[count];
+		if(tbr == EOF)
+			tbr = in;
 		IV[count] = in;
 		count = (count+1)%4;
 		return tbr;
@@ -171,7 +177,7 @@ public:
 			temp = in.get();
 		}
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);//prints key
+		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
 		out << temp2;
 	}
 
@@ -186,7 +192,7 @@ public:
 			temp = in.get();
 		}
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);//prints key
+		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
 		out << temp2;
 	}
 };
@@ -217,7 +223,7 @@ public:
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
 		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -227,6 +233,7 @@ public:
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
 		out << temp3;
+
 	}
 
 	void decode(std::istream & in, std::ostream & out)
@@ -242,15 +249,25 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
 
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
+
 		std::transform(temp3.begin(), temp3.end(),temp3.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
+
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), translater);
+
 		out << temp3;
 	}
 };
@@ -341,7 +358,7 @@ public:
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
 		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -366,13 +383,19 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
-
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
 		std::transform(temp3.begin(), temp3.end(),temp3.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), translater);
 		out << temp3;
@@ -526,7 +549,7 @@ public:
 
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -536,7 +559,6 @@ public:
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xoring(key));
-		std::cout << temp3.length() <<std::endl;
 		out << temp3;
 
 	}
@@ -554,12 +576,20 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
+
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
 		out << temp3;
 	}
 };
@@ -608,7 +638,7 @@ public:
 		temp3 = "";
 
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -617,7 +647,6 @@ public:
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xoring(key));
-		std::cout << temp3.length() <<std::endl;
 		out << temp3;
 
 	}
@@ -635,12 +664,19 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
 		out << temp3;
 	}
 };
@@ -809,7 +845,7 @@ public:
 
 		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -819,7 +855,6 @@ public:
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorcbcenc(key, IV));
-		std::cout << temp3.length() <<std::endl;
 		out << temp3;
 
 	}
@@ -837,12 +872,19 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
 		out << temp3;
 	}
 };
@@ -896,7 +938,7 @@ public:
 		temp3 = "";
 
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 26;};return z-65;});
+		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
@@ -905,7 +947,6 @@ public:
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorcbcenc(key, IV));
-		std::cout << temp3.length() <<std::endl;
 		out << temp3;
 
 	}
@@ -923,12 +964,19 @@ public:
 		//unpack
 		std::bitset<1000> bits;
 		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = (temp2.size()*8)/5;
+		int count = 0;
 		std::string temp3;
+		std::string temp4;
+		bool odd = false;
 		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;return bitty.to_ulong();});		//chop off bits that we want into char again
+		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==26){return 32;};return z+65;});
+		if(odd)
+		{
+			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
+			temp3 = temp4;
+		}
+		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
 		out << temp3;
 	}
 };
