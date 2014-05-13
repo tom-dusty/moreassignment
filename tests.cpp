@@ -3,12 +3,15 @@
 //5 April 2014
 /*
 Some general notes:
-The tests are divided into five Test cases:
-	Node - tests the Node class, including the 6 special member functions
-	Iterator - tests the tree_iterator methods for correctness
-	Parse Tree - tests parse_tree methods and 6 special member functions
-	Polymorphism - Makes sure the polymorphic calls are functioning correctly
-	Randomized Tree Testing - Creates 500 random trees and checks them for correctness
+The tests are divided into seven Test cases:
+	Vignere encoding and decoding 	- checks that the output after encoding and decoding is the same as the input
+	Vignere with grouping 			- checks that data is correctly grouped into blocks of five with spaces removed
+	Vignere with packing			- checks that encoded data is compressed (5/8s of the size of the input) and the output after decoding is the same as the input
+	Xor cipher using ECB	 		- checks that the output after encoding and decoding is the same as the input
+	Xor cipher using CBC 			- checks that the output after encoding and decoding is the same as the input
+	Xor cipher with grouping		- checks that data is correctly grouped into blocks of five with spaces removed
+	Xor cipher with packing  		- checks that encoded data is compressed (5/8s of the size of the input) and the output after decoding is the same as the input
+
 */
 
 //Neccessary includes
