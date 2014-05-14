@@ -1,13 +1,15 @@
-// CryptoMachine policies class
+// CryptoMachine_policies policies class
 // Thomas Dusterwald
 // 13 May 2014
 
 #ifndef _CRYPTOMACHINE_POLICIES_H
 #define _CRYPTOMACHINE_POLICIES_H
 
-#include <string>
+#include <iostream>
+#include <algorithm>
+#include <bitset>
+#include <cstdint>
 #include "types.h"
-#include "CryptoMachine_traits.h"
 
 //Functor used for vignere encoding. Makes use of ascii values for the chars instead of using a lookup table
 class vig {
@@ -79,31 +81,18 @@ public:
 };
 
 //xor ecb encoder/decoder functor
-class xoring {
-public:
-	int count;
-	std::vector<char> key;
-	xoring(std::vector<char> keyIn) : key(keyIn), count(0){};
-	char operator()(char in)
-	{
-		char tbr = in xor key[count];
-		if(tbr == EOF)
-			tbr = in;
-		count = (count+1)%4;
-		return tbr;
-	}
-};
-
-//xor cbc encoder functor
-class xorcbcenc {
+class xorenc{
 public:
 	int count;
 	std::vector<char> key;
 	std::vector<char> IV;
-	xorcbcenc(std::vector<char> keyIn,std::vector<char> IVin) : key(keyIn),IV(IVin), count(0){};
+	std::string mode;
+	xorenc(std::vector<char> keyIn,std::vector<char> IVin, std::string modeIn) : key(keyIn), IV(IVin), mode(modeIn), count(0){};
 	char operator()(char in)
 	{
-		char tbr = (in xor IV[count]) xor key[count];
+		char tbr = in xor key[count];
+		if(mode == "CBC")
+			tbr = tbr xor IV[count];
 		if(tbr == EOF)
 			tbr = in;
 		IV[count] = tbr;
@@ -113,15 +102,18 @@ public:
 };
 
 //xor cbc decoder functor
-class xorcbcdec {
+class xordec {
 public:
 	int count;
 	std::vector<char> key;
 	std::vector<char> IV;
-	xorcbcdec(std::vector<char> keyIn,std::vector<char> IVin) : key(keyIn),IV(IVin), count(0){};
+	std::string mode;
+	xordec(std::vector<char> keyIn,std::vector<char> IVin, std::string modeIn) : key(keyIn), IV(IVin), mode(modeIn), count(0){};
 	char operator()(char in)
 	{
-		char tbr = (in xor IV[count]) xor key[count];
+		char tbr = in xor key[count];
+		if(mode == "CBC")
+			tbr = tbr xor IV[count];		
 		if(tbr == EOF)
 			tbr = in;
 		IV[count] = in;
@@ -133,99 +125,53 @@ public:
 // Templated with four types that modify functionality
 
 template <typename Cipher, typename Mode, typename Group, typename Pack>
-class CryptoMachine 
+class CryptoMachine_policies 
 {
 public:
-	std::vector<char> key;
-	
-	//Default Constructor
-	CryptoMachine(){};
-	//Takes in a string key. Converts to char vector and stores in key
-	CryptoMachine(std::string keyIn)
-	{
-		std::transform(keyIn.begin(), keyIn.end(),keyIn.begin(), [](char z) -> char{return toupper(z);});
-		std::copy(keyIn.begin(), keyIn.end(), std::back_inserter(key));
-	}
 
-	void encode(std::istream & in, std::ostream & out);
-	void decode(std::istream & in, std::ostream & out);
+	void encode(std::string in, std::ostream & out, std::vector<char> key);
+	void decode(std::string in, std::ostream & out, std::vector<char> key);
 };
 
-//Cryptomachine templated with vignere and ECB options
+//CryptoMachine_policies templated with vignere and ECB options
 template <typename Group, typename Pack> 
-class CryptoMachine <vignere, ecb, Group, Pack>
+class CryptoMachine_policies <vignere, ecb, Group, Pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(std::string keyIn)
-	{
-		std::transform(keyIn.begin(), keyIn.end(),std::back_inserter(key), [](char z) -> char{return toupper(z);});
-	}
 
-	void encode(std::istream & in, std::ostream & out)
+	void encode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vig translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
-		out << temp2;
+		std::transform(in.begin(), in.end(), in.begin(), translater);
+		out << in;
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vigdec translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
-		out << temp2;
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
+		std::transform(in.begin(), in.end(), in.begin(), translater);
+		out << in;
 	}
 };
 
 //vignere ecb pack
 template <typename Group> 
-class CryptoMachine <vignere, ecb, Group, pack>
+class CryptoMachine_policies <vignere, ecb, Group, pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(std::string keyIn)
-	{
-		std::transform(keyIn.begin(), keyIn.end(),std::back_inserter(key), [](char z) -> char{return toupper(z);});
-	}
 
-	void encode(std::istream & in, std::ostream & out)
+	void encode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vig translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
+		//encode using vignere
+		std::transform(in.begin(), in.end(), in.begin(), translater);
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
+		std::transform(in.begin(), in.end(),in.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
+		std::vector<bool> squishy((in.size()*5)/8+1);
 		int count = 0;
 		std::string temp3;
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
@@ -234,24 +180,17 @@ public:
 
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vigdec translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
 		//unpack
 		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
+		std::vector<bool> squishy((in.size()*8)/5);
 		int count = 0;
 		std::string temp3;
 		std::string temp4;
 		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
 		if(odd)
@@ -261,9 +200,7 @@ public:
 		}
 
 		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
-
 		std::transform(temp3.begin(), temp3.end(),temp3.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), translater);
 
 		out << temp3;
@@ -272,95 +209,55 @@ public:
 
 //Vignere with Grouping option
 template <typename Pack> 
-class CryptoMachine <vignere, ecb, group, Pack>
+class CryptoMachine_policies <vignere, ecb, group, Pack>
 {
-private:
-	std::vector<char> key;
-	
 public:
-	CryptoMachine(std::string keyIn)
-	{
-		std::transform(keyIn.begin(), keyIn.end(),std::back_inserter(key), [](char z) -> char{return toupper(z);});
-	}
-
-	void encode(std::istream & in, std::ostream & out)
+	void encode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vig translater(key);
-		gro groupMe;
-		std::string temp2;
 		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
 		//Grouping part:
 		//	removes spaces
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
+		std::copy_if(in.begin(), in.end(), back_inserter(temp3), [](char z)->bool{if(z==91)return false;return true;});
 		// 	insert spaces every 5
-		gro y = std::for_each(temp3.begin(),temp3.end(),groupMe);
+		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
 		temp3 = y.grouped;
 		std::transform(temp3.begin(), temp3.end(), temp3.begin(), translater);
 		out << temp3;
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vigdec translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
-		out << temp2;
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
+		std::transform(in.begin(), in.end(), in.begin(), translater);
+		out << in;
 	}
 };
 
 //vignere ecb pack and group
 template <> 
-class CryptoMachine <vignere, ecb, group, pack>
+class CryptoMachine_policies <vignere, ecb, group, pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(std::string keyIn)
-	{
-		std::transform(keyIn.begin(), keyIn.end(),std::back_inserter(key), [](char z) -> char{return toupper(z);});
-	}
-
-	void encode(std::istream & in, std::ostream & out)
+	void encode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vig translater(key);
-		std::string temp2;
 		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
 		//Group
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
+		std::copy_if(in.begin(), in.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
 		// 	insert spaces every 5
 		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
-		temp2 = y.grouped;
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), translater);
+		in = y.grouped;
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{if(z==32){return 91;}return toupper(z);});
+		std::transform(in.begin(), in.end(), in.begin(), translater);
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
+		std::transform(in.begin(), in.end(),in.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
+		std::vector<bool> squishy((in.size()*5)/8+1);
 		int count = 0;
 		temp3 = "";
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
@@ -368,24 +265,17 @@ public:
 		out << temp3;
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key)
 	{
 		vigdec translater(key);
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
 		//unpack
 		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
+		std::vector<bool> squishy((in.size()*8)/5);
 		int count = 0;
 		std::string temp3;
 		std::string temp4;
 		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
 		if(odd)
@@ -401,184 +291,89 @@ public:
 };
 
 
-//xor ecb
-template <typename Group, typename Pack> 
-class CryptoMachine <xorencrypt, ecb, Group, Pack>
+//xor ecb/cbc
+template <typename Mode, typename Group, typename Pack> 
+class CryptoMachine_policies <xorencrypt, Mode, Group, Pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(uint32_t keyIn)
+	void encode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <8> bits2;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xoring(key));
-		out << temp2;
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
+		std::transform(in.begin(), in.end(), in.begin(), xorenc(key,IV,mode));
+		out << in;
 
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xoring(key));
-		out << temp2;
+		std::transform(in.begin(), in.end(), in.begin(), xordec(key,IV,mode));
+		out << in;
 	}
 };
 
-//xor ecb grouping
-template <typename Pack> 
-class CryptoMachine <xorencrypt, ecb, group, Pack>
+//xor ecb/cbc grouping
+template <typename Mode, typename Pack>
+class CryptoMachine_policies <xorencrypt, Mode, group, Pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(uint32_t keyIn)
+	void encode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <8> bits2;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
 		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
 
 		//Grouping part:
 		//	removes spaces
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
+		std::copy_if(in.begin(), in.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
 		// 	insert spaces every 5
 		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
 		temp3 = y.grouped;
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xoring(key));
+		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorenc(key,IV,mode));
 		out << temp3;
 
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xoring(key));
-		out << temp2;
+		std::transform(in.begin(), in.end(), in.begin(), xordec(key,IV,mode));
+		out << in;
 	}
 };
 
 //xor ecb packing
-template <typename Group> 
-class CryptoMachine <xorencrypt, ecb, Group, pack>
+template <typename Mode, typename Group> 
+class CryptoMachine_policies <xorencrypt, Mode, Group, pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(uint32_t keyIn)
+	void encode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <8> bits2;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
+		std::transform(in.begin(), in.end(),in.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
+		std::vector<bool> squishy((in.size()*5)/8+1);
 		int count = 0;
 		std::string temp3;
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xoring(key));
+		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorenc(key,IV,mode));
 		out << temp3;
 
 	}
 
-	void decode(std::istream & in, std::ostream & out)
+	void decode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xoring(key));
+		std::transform(in.begin(), in.end(), in.begin(), xordec(key,IV,mode));
 		//unpack
 		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
+		std::vector<bool> squishy((in.size()*8)/5);
 		int count = 0;
 		std::string temp3;
 		std::string temp4;
 		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
 		if(odd)
@@ -592,381 +387,48 @@ public:
 	}
 };
 
-//xor ecb packing and grouping
-template <> 
-class CryptoMachine <xorencrypt, ecb, group, pack>
+//xor ecb/ecb packing and grouping
+template <typename Mode> 
+class CryptoMachine_policies <xorencrypt, Mode, group, pack>
 {
-private:
-	std::vector<char> key;
-
 public:
-	CryptoMachine(uint32_t keyIn)
+	void encode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <8> bits2;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
 		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
 		//Grouping part:
 		//	removes spaces
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
+		std::transform(in.begin(), in.end(),in.begin(), [](char z) -> char{return toupper(z);});
+		std::copy_if(in.begin(), in.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
 		// 	insert spaces every 5
 		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
-		temp2 = y.grouped;
+		in = y.grouped;
 		temp3 = "";
 
 		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
+		std::transform(in.begin(), in.end(),in.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
 		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
 		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
+		std::vector<bool> squishy((in.size()*5)/8+1);
 		int count = 0;
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
 		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xoring(key));
+		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorenc(key,IV,mode));
 		out << temp3;
 
-	}
-
-	void decode(std::istream & in, std::ostream & out)
+	};
+	void decode(std::string in, std::ostream & out, std::vector<char> key,std::vector<char> IV, std::string mode)
 	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xoring(key));
+		std::transform(in.begin(), in.end(), in.begin(), xordec(key,IV,mode));
 		//unpack
 		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
+		std::vector<bool> squishy((in.size()*8)/5);
 		int count = 0;
 		std::string temp3;
 		std::string temp4;
 		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
-		std::reverse(temp3.begin(), temp3.end());
-		if(odd)
-		{
-			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
-			temp3 = temp4;
-		}
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
-		out << temp3;
-	}
-};
-
-//xor CBC
-template <typename Group, typename Pack> 
-class CryptoMachine <xorencrypt, cbc, Group, Pack>
-{
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
-
-public:
-	CryptoMachine(uint32_t keyIn, uint32_t IVin)
-	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <32> bitsI(IVin);
-		std::bitset <8> bits2;
-		std::bitset <8> bits3;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			bits3[i%8] = bitsI[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-				IV.push_back(bits3.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xorcbcenc(key, IV));
-		out << temp2;
-
-	}
-
-	void decode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xorcbcdec(key, IV));
-		out << temp2;
-		encode(in, out);
-	}
-};
-
-//xor CBC grouping
-template <typename Pack> 
-class CryptoMachine <xorencrypt, cbc, group, Pack>
-{
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
-
-public:
-	CryptoMachine(uint32_t keyIn, uint32_t IVin)
-	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <32> bitsI(IVin);
-		std::bitset <8> bits2;
-		std::bitset <8> bits3;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			bits3[i%8] = bitsI[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-				IV.push_back(bits3.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		//Grouping part:
-		//	removes spaces
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
-		// 	insert spaces every 5
-		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
-		temp3 = y.grouped;
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorcbcenc(key, IV));
-		out << temp3;
-
-	}
-
-	void decode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xorcbcdec(key, IV));
-		out << temp2;
-		encode(in, out);
-	}
-};
-
-//xor CBC packing
-template <typename Group> 
-class CryptoMachine <xorencrypt, cbc, Group, pack>
-{
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
-
-public:
-	CryptoMachine(uint32_t keyIn, uint32_t IVin)
-	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <32> bitsI(IVin);
-		std::bitset <8> bits2;
-		std::bitset <8> bits3;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			bits3[i%8] = bitsI[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-				IV.push_back(bits3.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
-		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
-		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
-		int count = 0;
-		std::string temp3;
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
-		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorcbcenc(key, IV));
-		out << temp3;
-
-	}
-
-	void decode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xorcbcdec(key, IV));
-		//unpack
-		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = 0;
-		std::string temp3;
-		std::string temp4;
-		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
-		std::reverse(temp3.begin(), temp3.end());
-		if(odd)
-		{
-			std::copy_if(temp3.begin(),temp3.end(),std::back_inserter(temp4),[&](char in)->bool{return !(in==0);});
-			temp3 = temp4;
-		}
-		std::transform(temp3.begin(), temp3.end(),temp3.begin(),[](char z)->char{if(z==27){return 32;};return z+64;});
-		out << temp3;
-	}
-};
-
-//xor CBC packing and grouping
-template <> 
-class CryptoMachine <xorencrypt, cbc, group, pack>
-{
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
-
-public:
-	CryptoMachine(uint32_t keyIn, uint32_t IVin)
-	{
-		std::bitset <32> bits(keyIn);
-		std::bitset <32> bitsI(IVin);
-		std::bitset <8> bits2;
-		std::bitset <8> bits3;
-		for(int i =0;i<32;++i)
-		{	
-			bits2[i%8] = bits[i];
-			bits3[i%8] = bitsI[i];
-			if(i%8==7)
-			{
-				key.push_back(bits2.to_ulong());
-				IV.push_back(bits3.to_ulong());
-			}
-		}
-	}
-
-	void encode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		std::string temp3;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		//Grouping part:
-		//	removes spaces
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(), [](char z) -> char{return toupper(z);});
-		std::copy_if(temp2.begin(), temp2.end(), back_inserter(temp3), [](char z)->bool{if(z==32)return false;return true;});
-		// 	insert spaces every 5
-		gro y = std::for_each(temp3.begin(),temp3.end(),gro());
-		temp2 = y.grouped;
-		temp3 = "";
-
-		//pack
-		std::transform(temp2.begin(), temp2.end(),temp2.begin(),[](char z)->char{if(z==32){return 27;};return z-64;});
-		std::bitset<1000> bits;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<5;bits|=(std::bitset<1000>(z));});
-		//chop off bits that we want into char again
-		std::vector<bool> squishy((temp2.size()*5)/8+1);
-		int count = 0;
-		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(8);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>8;return bitty.to_ulong();});
-		std::reverse(temp3.begin(), temp3.end());
-		std::transform(temp3.begin(), temp3.end(), temp3.begin(), xorcbcenc(key, IV));
-		out << temp3;
-
-	}
-
-	void decode(std::istream & in, std::ostream & out)
-	{
-		std::string temp2;
-		char temp = in.get();
-		while(temp!=EOF)
-		{
-			temp2 += temp;
-			temp = in.get();
-		}
-		std::transform(temp2.begin(), temp2.end(), temp2.begin(), xorcbcdec(key, IV));
-		//unpack
-		std::bitset<1000> bits;
-		std::vector<bool> squishy((temp2.size()*8)/5);
-		int count = 0;
-		std::string temp3;
-		std::string temp4;
-		bool odd = false;
-		std::for_each(temp2.begin(), temp2.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
+		std::for_each(in.begin(), in.end(),[&bits](char z){bits = bits<<8;bits|=(std::bitset<1000>(std::bitset<8>(z).to_string()));});
 		std::transform(squishy.begin(), squishy.end(),std::back_inserter(temp3),[&count, &bits,&odd](bool n)->char{count = 0;char ret;std::vector<bool> squishy2(5);std::bitset<8> bitty;std::for_each(squishy2.begin(),squishy2.end(),[&count, &bits, &bitty](bool meh){bitty[count]=bits[count];count++;});bits = bits>>5;if(bitty.to_ulong()==0)odd=true;return bitty.to_ulong();});		//chop off bits that we want into char again
 		std::reverse(temp3.begin(), temp3.end());
 		if(odd)

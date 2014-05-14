@@ -1,4 +1,4 @@
-// CryptoMachine traits class
+// CryptoMachine_Traits traits class
 // Thomas Dusterwald
 // 13 May 2014
 
@@ -12,180 +12,156 @@
 // Templated with four types that modify functionality
 
 template <typename Cipher, typename Mode, typename Group, typename Pack>
-class CryptoMachine 
+class CryptoMachine_Traits 
 {
-private:
-	std::vector<char> key;
 public:
-	std::string cypher_type = "unimplemented";
-	std::string mode = "unimplemented";
-	bool group = false;
-	bool pack = false;
+	static std::string cypher_type(void){return "unimplemented";}
+	static std::string mode(void){return "unimplemented";}
+	static const bool group = false;
+	static const bool pack = false;
 };
 
-//Cryptomachine templated with vignere and ECB options
+//CryptoMachine_Traits templated with vignere and ECB options
 template <typename Group, typename Pack> 
-class CryptoMachine <vignere, ecb, Group, Pack>
+class CryptoMachine_Traits <vignere, ecb, Group, Pack>
 {
-private:
-	std::vector<char> key;
 public:
-	std::string cypher_type = "vignere";
-	std::string mode = "ECB";
-	bool group = false;
-	bool pack = false;
+	static std::string cypher_type(void){return "vignere";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = false;
+	static const bool pack = false;
 };
 
 //vignere ecb pack
 template <typename Group> 
-class CryptoMachine <vignere, ecb, Group, pack>
+class CryptoMachine_Traits <vignere, ecb, Group, pack>
 {
-private:
-	std::vector<char> key;
 public:
-	std::string cypher_type = "vignere";
-	std::string mode = "ECB";
-	bool group = false;
-	bool pack = true;
+	static std::string cypher_type(void){return "vignere";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = false;
+	static const bool pack = true;
 };
 
 //Vignere with Grouping option
 template <typename Pack> 
-class CryptoMachine <vignere, ecb, group, Pack>
+class CryptoMachine_Traits <vignere, ecb, group, Pack>
 {
-private:
-	std::vector<char> key;
 public:
-	std::string cypher_type = "vignere";
-	std::string mode = "ECB";
-	bool group = true;
-	bool pack = false;
+	static std::string cypher_type(void){return "vignere";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = true;
+	static const bool pack = false;
 };
 
 //vignere ecb pack and group
 template <> 
-class CryptoMachine <vignere, ecb, group, pack>
+class CryptoMachine_Traits <vignere, ecb, group, pack>
 {
-private:
-	std::vector<char> key;
 public:
-	std::string cypher_type = "vignere";
-	std::string mode = "ECB";
-	bool group = true;
-	bool pack = true;
+	static std::string cypher_type(void){return "vignere";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = true;
+	static const bool pack = true;
 };
 
+//xor
+template <typename Group, typename Mode, typename Pack> 
+class CryptoMachine_Traits <xorencrypt, Mode, Group, Pack>
+{
+public:
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "?";}
+	static const bool group = false;
+	static const bool pack = false;
+};
 
 //xor ecb
 template <typename Group, typename Pack> 
-class CryptoMachine <xorencrypt, ecb, Group, Pack>
+class CryptoMachine_Traits <xorencrypt, ecb, Group, Pack>
 {
-private:
-	std::vector<char> key;
-	const std::vector<char> IV(4,0);
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "ECB";
-	bool group = false;
-	bool pack = false;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = false;
+	static const bool pack = false;
 };
 
 //xor ecb grouping
 template <typename Pack> 
-class CryptoMachine <xorencrypt, ecb, group, Pack>
+class CryptoMachine_Traits <xorencrypt, ecb, group, Pack>
 {
-private:
-	std::vector<char> key;
-	const std::vector<char> IV(4,0);
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "ECB";
-	bool group = true;
-	bool pack = false;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = true;
+	static const bool pack = false;
 };
 
 //xor ecb packing
 template <typename Group> 
-class CryptoMachine <xorencrypt, ecb, Group, pack>
+class CryptoMachine_Traits <xorencrypt, ecb, Group, pack>
 {
-private:
-	std::vector<char> key;
-	const std::vector<char> IV(4,0);
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "ECB";
-	bool group = false;
-	bool pack = true;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = false;
+	static const bool pack = true;
 };
 
 //xor ecb packing and grouping
 template <> 
-class CryptoMachine <xorencrypt, ecb, group, pack>
+class CryptoMachine_Traits <xorencrypt, ecb, group, pack>
 {
-private:
-	std::vector<char> key;
-	const std::vector<char> IV(4,0);
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "ECB";
-	bool group = true;
-	bool pack = true;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "ECB";}
+	static const bool group = true;
+	static const bool pack = true;
 };
 
 //xor CBC
 template <typename Group, typename Pack> 
-class CryptoMachine <xorencrypt, cbc, Group, Pack>
+class CryptoMachine_Traits <xorencrypt, cbc, Group, Pack>
 {
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "CBC";
-	bool group = false;
-	bool pack = false;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "CBC";}
+	static const bool group = false;
+	static const bool pack = false;
 };
 
 //xor CBC grouping
 template <typename Pack> 
-class CryptoMachine <xorencrypt, cbc, group, Pack>
+class CryptoMachine_Traits <xorencrypt, cbc, group, Pack>
 {
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "CBC";
-	bool group = true;
-	bool pack = false;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "CBC";}
+	static const bool group = true;
+	static const bool pack = false;
 };
 
 //xor CBC packing
 template <typename Group> 
-class CryptoMachine <xorencrypt, cbc, Group, pack>
+class CryptoMachine_Traits <xorencrypt, cbc, Group, pack>
 {
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "CBC";
-	bool group = false;
-	bool pack = true;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "CBC";}
+	static const bool group = false;
+	static const bool pack = true;
 };
 
 //xor CBC packing and grouping
 template <> 
-class CryptoMachine <xorencrypt, cbc, group, pack>
+class CryptoMachine_Traits <xorencrypt, cbc, group, pack>
 {
-private:
-	std::vector<char> key;
-	std::vector<char> IV;
 public:
-	std::string cypher_type = "xor";
-	std::string mode = "CBC";
-	bool group = true;
-	bool pack = true;
+	static std::string cypher_type(void){return "xor";}
+	static std::string mode(void){return "CBC";}
+	static const bool group = true;
+	static const bool pack = true;
 };
 
 #endif

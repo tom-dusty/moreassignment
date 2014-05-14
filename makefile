@@ -11,12 +11,11 @@ OBJECTS = cmdline_parser.o driver.o
 SOURCES = *.cpp tests.cpp *.h
 PROGRAM = crypto
 
+$(PROGRAM) : $(SOURCES) cmdline_parser.cpp $(OBJECTS) tests
+	g++  driver.cpp cmdline_parser.o -o $(PROGRAM) $(CPPFLAGS) $(LDFLAGS)
+
 tests : $(OBJECTS) $(SOURCES) tests.cpp
 	g++  tests.cpp -o tests $(CPPFLAGS) $(LDFLAGS)
-
-
-$(PROGRAM) : $(SOURCES) cmdline_parser.cpp $(OBJECTS)
-	g++  driver.cpp cmdline_parser.o -o $(PROGRAM) $(CPPFLAGS) $(LDFLAGS)
 
 cmdline_parser.o : cmdline_parser.cpp
 	g++ -std=c++0x cmdline_parser.cpp -c $(CPPFLAGS) $(LDFLAGS)
@@ -26,3 +25,6 @@ run :
 
 clean :
 	rm *.o
+
+test :
+	./tests

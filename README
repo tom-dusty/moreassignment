@@ -1,0 +1,34 @@
+Assignment 3: An encryption suite using template specialisation
+DSTTHO002 - Thomas Dusterwald
+14 May 2014
+
+Description: Implements two different encryption algorithms, Vignere and Xor, under different conditions (grouping and packing or both). It makes use of traits and policy classes to allow the user the flexibility to use whatever algorithm they need without incurring unneccesary overhead.
+
+Instructions:
+- This project comes with a makefile with the following commands:
+	- make: compiles everything
+	- clean: removes all object files
+	- test: runs the test suite
+- Upon compilation there will be two executables:
+	- crypto: uses the commandline_parser to allow files to be encrypted and decrypted on the terminal. For full details on what commands to use see the assignment handout. An example command is
+		>>./crypto -i input.txt -o output.txt -v HELLO -pe
+	Which would encode the input.txt file using a vignere encoder and the key 'HELLO'. It would also pack the result and write this to output.txt.
+	- ./tests: This is the test suite described earlier. It uses randomly generated sentences and keys to verify that each type of encoder and decoder works.
+
+Other things to note:
+- The vignere encrypter will only encode letters in the alphabet (A-Z) and the space character. Lower case letters are also accepted, but these are converted to their upper case equivalent.
+- Characters read in from files will only have finished being read on an EOF character. This is particularly important if trying to input sentences to encode through the terminal. Use ctrl+D to signal an EOF character in this case.
+
+List of files and dependencies (note -> means 'depends on':
+README
+.git
+types.h
+CryptoMachine_policies.h -> types.h
+CryptoMachine_traits.h -> types.h
+CryptoMachine.h -> types.h CryptoMachine_policies.h CryptoMachine_traits.h
+cmdline_parser.cpp
+cmdline_parser.h
+driver.cpp -> types.h CryptoMachine.h
+tests.cpp -> types.h CryptoMachine.h
+output.txt - can be used as test files for the terminal input
+input.txt

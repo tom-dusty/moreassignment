@@ -38,9 +38,6 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if(parser.should_print_help())
-		{ parser.print_help(std::cout);	}
-
 	if(parser.should_encode())
 		switchsum+=4;
 	if(parser.should_group())
@@ -49,7 +46,6 @@ int main(int argc, char* argv[])
 		switchsum+=1;
 	if(parser.vignere_or_xor())
 		switchsum += 8;
-std::cout << switchsum <<std::endl;
 	switch(switchsum)
 	{
 		case 0: // decode with xor -- no packing or grouping

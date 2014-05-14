@@ -1,0 +1,1 @@
+g++ -std=c++0x cmdline_parser.cpp -c  -std=c++0x -lboost_program_options  -fPIC
